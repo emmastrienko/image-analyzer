@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Grid Pixel Analysis</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        color: white;
+        background-color: rgb(0, 0, 0);
+      }
+      h1, h3 {
+        text-align: center;
+        color: rgb(177, 65, 187);
+        padding: 20px;
+      }
+
+      button {
+        background-color: #333;
+      }
+      #container {
+        display: flex;
+        align-items: flex-start;
+      }
+      #canvas {
+        border: 1px solid #333;
+      }
+      #vector {
+        margin-left: 20px;
+        font-family: Arial, sans-serif;
+        max-width: 300px;
+        word-wrap: break-word;
+        color: aquamarine;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Image Analyser</h1>
+    <input type="file" id="imageUpload" accept="image/*" />
+    <button id="toggleButton">Hide Pixel Data</button>
+    <div id="container">
+      <canvas id="canvas" width="400" height="400"></canvas>
+      <div id="vector"></div>
+    </div>
+    <script>
+      document
+        .getElementById("imageUpload")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          const img = new Image();
+          const canvas = document.getElementById("canvas");
+          const ctx = canvas.getContext("2d");
+          const vectorContainer = document.getElementById("vector");
+          const gridSize = 50; // Розмір сітки (50x50 пікселів)
+          let showPixelData = true; // Перемикач видимості даних пікселів
+          let numericalVector = []; // Збережений вектор ознак
+
+          img.onload = function () {
+            // Масштабування зображення до 400x400
+            const scale = Math.min(400 / img.width, 400 / img.height);
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
+
+            // Очищення канвасу
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Малюємо зображення на канвасі зі зміненим розміром
+            ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+
+            const width = scaledWidth;
+            const height = scaledHeight;
+            const gridRows = Math.floor(height / gridSize);
+            const gridCols = Math.floor(width / gridSize);
+
+            ctx.strokeStyle = "red"; // Колір сітки
+            ctx.font = "12px Arial";
+            ctx.fillStyle = "blue"; // Колір тексту
+
+            if (numericalVector.length === 0) {
+              // Зчитування вектора ознак лише один раз
+              for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                  let nonWhitePixelCount = 0;
+
+                  // Проходимо через кожен піксель у кожному квадраті сітки
+                  for (let y = row * gridSize; y < (row + 1) * gridSize; y++) {
+                    for (
+                      let x = col * gridSize;
+                      x < (col + 1) * gridSize;
+                      x++
+                    ) {
+                      const pixelData = ctx.getImageData(x, y, 1, 1).data;
+
+                      // Перевірка чи піксель білий
+                      if (
+                        !(
+                          pixelData[0] === 255 &&
+                          pixelData[1] === 255 &&
+                          pixelData[2] === 255
+                        )
+                      ) {
+                        nonWhitePixelCount++;
+                      }
+                    }
+                  }
+
+                  // Додаємо значення у числовий вектор (кількість небілих пікселів)
+                  numericalVector.push(nonWhitePixelCount);
+                }
+              }
+
+              // Виводимо числовий вектор (вектор ознак)
+              vectorContainer.innerHTML = "<h3>Vector:</h3>";
+              vectorContainer.innerHTML += `(${numericalVector.join(", ")})`;
+            }
+
+            // Малювання сітки та відображення даних, якщо дозволено
+            let index = 0;
+            for (let row = 0; row < gridRows; row++) {
+              for (let col = 0; col < gridCols; col++) {
+                // Малюємо квадрат сітки
+                ctx.strokeRect(
+                  col * gridSize,
+                  row * gridSize,
+                  gridSize,
+                  gridSize
+                );
+
+                // Виводимо кількість білих і небілих пікселів всередині квадрата, якщо це дозволено
+                if (showPixelData) {
+                  const nonWhitePixelCount = numericalVector[index];
+                  const whitePixelCount =
+                    gridSize * gridSize - nonWhitePixelCount;
+
+                  ctx.fillText(
+                    `W:${whitePixelCount}`,
+                    col * gridSize + 2,
+                    row * gridSize + 15
+                  );
+                  ctx.fillText(
+                    `NW:${nonWhitePixelCount}`,
+                    col * gridSize + 2,
+                    row * gridSize + 30
+                  );
+                }
+
+                index++;
+              }
+            }
+          };
+
+          // Читання файлу як URL для зображення
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+
+          // Перемикання видимості даних пікселів
+          document
+            .getElementById("toggleButton")
+            .addEventListener("click", function () {
+              showPixelData = !showPixelData;
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              img.onload();
+              this.textContent = showPixelData
+                ? "Hide Pixel Data"
+                : "Show Pixel Data";
+            });
+        });
+    </script>
+  </body>
+</html>
