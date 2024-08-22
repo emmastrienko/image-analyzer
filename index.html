@@ -113,9 +113,17 @@
                 }
               }
 
+              const MaxVal = Math.max(...numericalVector);
+
+              const NormilizedVector = numericalVector.map(
+                (val) => val / MaxVal
+              );
+
               // Виводимо числовий вектор (вектор ознак)
               vectorContainer.innerHTML = "<h3>Vector:</h3>";
               vectorContainer.innerHTML += `(${numericalVector.join(", ")})`;
+              vectorContainer.innerHTML += "<h3>Normilized Vector:</h3>";
+              vectorContainer.innerHTML += `(${NormilizedVector.join(", ")})`;
             }
 
             // Малювання сітки та відображення даних, якщо дозволено
