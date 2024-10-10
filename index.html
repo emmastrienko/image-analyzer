@@ -74,6 +74,8 @@
           let showPixelData = true; // Перемикач видимості даних пікселів
           let numericalVector = []; // Збережений вектор ознак
           let normalizedVector = [];
+          let classOneBinarVector = [];
+          let classTwoBinarVector = [];
 
           img.onload = function () {
             // Масштабування зображення до 400x400
@@ -152,7 +154,9 @@
                     normalizedVector
                   )}`
                 );
-                errorSums.push(SumOfDifferences(mainArr[key], normalizedVector));
+                errorSums.push(
+                  SumOfDifferences(mainArr[key], normalizedVector)
+                );
               }
               let closestNum = 0;
               closestNum = errorSums.reduce(
@@ -168,6 +172,123 @@
                       <h3>Error differences</h3>
                       ${errorSums.map((e, i) => `${i}: ${e}`).join("<br>")}`;
             }
+
+            // Визначаємо кількість ознак (m)
+            const m = 64; 
+
+            let trainingData = [
+              { input: data[0], expectedOutput: 0 },
+              { input: data[1], expectedOutput: 1 },
+            ];
+
+            // Ініціалізація ваг w_i випадковими малими значеннями
+            let weights = [];
+            for (let i = 0; i < m; i++) {
+              weights[i] = Math.random() * 0.01; // випадкові числа від 0 до 0.01
+            }
+
+            // Ініціалізація порогового значення b
+            let bias = Math.random() * 0.01; // випадкове мале значення
+
+            // Виведення результатів
+            console.log("Ваги:", weights);
+            console.log("Зміщення:", bias);
+
+            // Встановлюємо коефіцієнт навчання (швидкість навчання) η
+            let learningRate = 0.01; // мале додатне число, наприклад 0.01
+
+            // Виведення значення швидкості навчання
+            console.log("Коефіцієнт навчання (η):", learningRate);
+
+            // Обчислення зваженої суми входів (z)
+            function weightedSum(inputVector, weights, bias) {
+              let z = 0;
+              for (let i = 0; i < inputVector.length; i++) {
+                z += weights[i] * inputVector[i]; // ∑ w_j * x_i,j
+              }
+              z += bias; // додаємо зміщення (поріг) b
+              return z;
+            }
+
+            // Максимальна кількість епох (проходів через всі зразки)
+            let maxEpochs = 1000;
+
+            // Активаційна функція (порогова)
+            function activationFunction(z) {
+              return z >= 0 ? 1 : 0; // повертаємо 1, якщо z >= 0, інакше 0
+            }
+
+            // Обчислюємо зважену суму входів
+            let z = weightedSum(normalizedVector, weights, bias);
+
+            // Застосовуємо активаційну функцію
+            let predictedOutput = activationFunction(z);
+
+            console.log("Зважена сума (z):", z);
+            console.log("Передбачений вихід (ŷ):", predictedOutput);
+
+            // Навчальний алгоритм одношарового перцептрона
+            function trainPerceptron(
+              trainingData,
+              weights,
+              bias,
+              learningRate,
+              maxEpochs
+            ) {
+              let epoch = 0;
+              let globalError = 0;
+
+              do {
+                globalError = 0; // сукупна помилка для всіх зразків
+                for (let data of trainingData) {
+                  // Крок 2: Обчислюємо зважену суму
+                  let z = weightedSum(data.input, weights, bias);
+
+                  // Передбачений вихід ŷ
+                  let predictedOutput = activationFunction(z);
+
+                  // Крок 3: Обчислення помилки
+                  let error = data.expectedOutput - predictedOutput;
+                  globalError += Math.abs(error); // додаємо помилку для обчислення глобальної
+
+                  // Оновлення ваг і зміщення
+                  for (let i = 0; i < weights.length; i++) {
+                    weights[i] =
+                      weights[i] + learningRate * error * data.input[i]; // w_j ← w_j + η⋅e_i⋅x_i,j
+                  }
+                  bias = bias + learningRate * error; // b ← b + η⋅e_i
+
+                  // Вивід оновлених ваг, зміщення і помилки для кожного зразка
+                  console.log(`Оновлені ваги: ${weights}`);
+                  console.log(`Оновлене зміщення: ${bias}`);
+                  console.log(`Помилка: ${error}`);
+                }
+
+                epoch++;
+              } while (globalError != 0 && epoch < maxEpochs); // зупиняємо якщо помилка = 0 або досягнуто максимум епох
+
+              // Кінцевий результат
+              console.log("Навчання завершено!");
+              console.log(`Кількість епох: ${epoch}`);
+              console.log(`Остаточні ваги: ${weights}`);
+              console.log(`Остаточне зміщення: ${bias}`);
+            }
+
+            // Виклик навчання
+            trainPerceptron(
+              trainingData,
+              weights,
+              bias,
+              learningRate,
+              maxEpochs
+            );
+
+            let res = weightedSum(normalizedVector, weights, bias);
+            let predictedClass = activationFunction(res);
+
+            console.log(
+              `Передбачений клас для нового зображення: ${predictedClass}`
+            );
 
             // Малювання сітки та відображення даних, якщо дозволено
             let index = 0;
@@ -731,7 +852,6 @@
       let mainArr = [];
 
       for (let key in AllData) {
-        console.log(AllData[key]);
         let numArrays = AllData[key].length;
 
         // First, add corresponding elements together
@@ -743,11 +863,7 @@
         let avgArray = summedArray.map((num) => num / numArrays);
 
         mainArr.push(avgArray);
-
-        console.log(avgArray);
       }
-
-      console.log(mainArr);
     </script>
   </body>
 </html>
